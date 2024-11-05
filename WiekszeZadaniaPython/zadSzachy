@@ -1,0 +1,137 @@
+import random
+import unittest
+
+def stworzenie_planszy():
+  board = [ ['-' for _ in range(8) ] for _ in range(8) ]
+  return board
+  
+
+def ustawienie_pionka(board):
+  row = random.randint(0, 7)
+  col = random.randint(0, 7)
+  while board[row][col] == 'Q':
+    row = random.randint(0, 7)
+    col = random.randint(0, 7)
+  board[row][col] = 'P'
+  return (row, col)
+
+def ustawienie_hetmanow(board, ilosc_hetmanow):
+  hetmani = []
+  while len(hetmani) < ilosc_hetmanow:
+      row, col = random.randint(0, 7), random.randint(0, 7)
+      if board[row][col] != 'Q' and not znajdz_atakujacych(board, hetmani, (row, col)):
+          board[row][col] = 'Q'
+          hetmani.append((row, col))
+  return hetmani
+
+def wyswietlenie_planszy(board):
+  a = "-------------------------------\n"
+  for row in board:
+    a += ' '
+    a += ' | '.join(row)
+    a += "\n-------------------------------\n"
+  print(a)
+
+def ruch_pionka(board, pionek):
+  board[pionek[0]][pionek[1]] = '-'
+  return ustawienie_pionka(board)
+
+def usuniecie_hetmanow(board, hetmani, pozycja_hetmana):
+  row, col = pozycja_hetmana
+  if (row, col) in hetmani:
+    hetmani.remove((row, col))
+    board[row][col] = '-'
+  return hetmani
+
+def czy_uderzy_pionek(board, hetman, pionek):
+  row, col = hetman
+  row_p, col_p = pionek
+  return row == row_p or col == col_p or abs(row - row_p) == abs(col - col_p)
+
+def znajdz_atakujacych(board, hetmani, pionek):
+  lista_hentanow = []
+  for hetman in hetmani:
+    if czy_uderzy_pionek(board, hetman, pionek):
+      lista_hentanow.append(hetman)
+  return lista_hentanow
+
+def sprawdz_atak(board, hetmani, pionek):
+  atakujacy_hetmani = znajdz_atakujacych(board, hetmani, pionek)
+  if atakujacy_hetmani is not None:
+    print("Atakujacy hetmani: ")
+    for hetman in atakujacy_hetmani:
+      print(f"Pozycja {hetman}")
+    return True
+  else:
+    print("bezpieczny pionek")
+    return False
+
+def main():
+  ilosc_hetmanow = int(input("Podaj ilosc hetmanow na planszy (1-5): "))
+  if not 1 <= ilosc_hetmanow <= 5:
+    print("Niepoprawna liczba")
+    return 
+    
+  board = stworzenie_planszy()
+  hetmani = ustawienie_hetmanow(board, ilosc_hetmanow)
+  pionek = ustawienie_pionka(board)
+  wyswietlenie_planszy(board)
+
+  while True:
+    if sprawdz_atak(board, hetmani, pionek):
+      wybor = int(input("1. zmiana ustawienia pionka\n2. usuniecie hetmana\n3. koniec programu: \n"))
+      if wybor == 1:
+        pionek = ruch_pionka(board, pionek)
+      elif wybor == 2:
+        pozycja_hetmana = tuple(map(int, input("Pozycja do usuniecia (X, Y): ").split()))
+        hetmani = usuniecie_hetmanow(board, hetmani, pozycja_hetmana)
+      elif wybor == 3:
+        return
+      else:
+        continue
+
+    wyswietlenie_planszy(board)
+    if input("\nCzy konczymy? (t/n)").lower() == 't':
+      break
+
+
+class TestSzachy(unittest.TestCase):
+  def test_stworzenie_planszy(self):
+    board = stworzenie_planszy()
+    self.assertEqual(len(board), 8)
+    self.assertEqual(len(board[0]), 8)
+    self.assertTrue( all(cell == '-' for row in board for cell in row) )
+
+  def test_ustawienie_pionka(self):
+    board = stworzenie_planszy()
+    ustawienie_pionka(board)
+    pionki_count = sum(row.count('P') for row in board)
+    self.assertEqual(pionki_count, 1)
+
+  def test_ustawienie_hetmanow(self):
+    board = stworzenie_planszy()
+    hetmani = ustawienie_hetmanow(board, 3)
+    self.assertEqual(len(hetmani), 3)
+    for hetman in hetmani:
+      row, col = hetman
+      self.assertEqual(board[row][col], 'Q')
+
+  def test_czy_uderzy_pionek(self):
+    board = stworzenie_planszy()
+    board[2][3] = 'Q'
+    self.assertTrue(czy_uderzy_pionek(board, (2, 3), (2, 3)))
+    self.assertFalse(czy_uderzy_pionek(board, (2, 3), (1, 7)))
+    self.assertTrue(czy_uderzy_pionek(board, (2, 3), (5, 6)))
+
+  def test_usuniecie_hetmanow(self):
+    board = stworzenie_planszy()
+    board[0][0] = 'Q'
+    hetmani = [(0, 0)]
+    result = usuniecie_hetmanow(board, hetmani, (0, 0))
+    self.assertNotIn((0, 0), result)
+    self.assertEqual(board[0][0], '-')
+
+
+if __name__ == "__main__":
+  main()
+  #unittest.main()
